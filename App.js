@@ -25,7 +25,6 @@ import Animated, {
 
 export default function App() {
   const [image, setImage] = useState(null);
-  const [imageIndex, setImageIndex] = useState(null);
 
   const likeOpacity = useSharedValue(0);
   const nopeOpacity = useSharedValue(0);
@@ -33,8 +32,24 @@ export default function App() {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const rotate = useSharedValue(0);
+  const imageOpacity = useSharedValue(1);
 
   const SWIPE_THRESHOLD = 100;
+
+  const [redButtonColor, setRedButtonColor] = useState("#fff");
+  const [greenButtonColor, setGreenButtonColor] = useState("#fff");
+
+  const onPressInRed = () => setRedButtonColor("red");
+  const onPressOutRed = () => {
+    setRedButtonColor("#fff")
+    dislikeImage();
+  };
+
+  const onPressInGreen = () => setGreenButtonColor("green");
+  const onPressOutGreen = () => {
+    setGreenButtonColor("#fff")
+    likeImage();
+  };
 
   const triggerLiked = () => {
     likeImage();
@@ -42,7 +57,7 @@ export default function App() {
   const triggerDisliked = () => {
     dislikeImage();
   };
-  
+
   // Swipe handler
   const gestureHandler = useAnimatedGestureHandler({
     onStart: (_, context) => {
@@ -55,6 +70,11 @@ export default function App() {
       rotate.value = translateX.value / 1000; // Ajust rotation ratio
       likeOpacity.value = translateX.value > 0 ? translateX.value / 400 : 0;
       nopeOpacity.value = translateX.value < 0 ? -translateX.value / 400 : 0;
+      const distance = Math.sqrt(
+        event.translationX ** 2 + event.translationY ** 2
+      );
+      const maxDistance = 300; // Vous pouvez ajuster ce seuil
+      imageOpacity.value = Math.max(1 - distance / maxDistance, 0);
     },
     onEnd: (event) => {
       if (translateX.value > SWIPE_THRESHOLD) {
@@ -105,6 +125,12 @@ export default function App() {
   const nopeStyle = useAnimatedStyle(() => {
     return {
       opacity: nopeOpacity.value,
+    };
+  });
+
+  const imageAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: imageOpacity.value,
     };
   });
 
@@ -161,7 +187,6 @@ export default function App() {
             Math.random() * finalBatch.assets.length
           );
           setImage(finalBatch.assets[randomIndexWithinBatch].uri);
-          setImageIndex(randomStartIndex + randomIndexWithinBatch);
         }
       }
     } catch (error) {
@@ -185,12 +210,18 @@ export default function App() {
     pickRandomImage();
   }, []);
 
+  useEffect(() => {
+    if (image) {
+      imageOpacity.value = 1;
+    }
+  }, [image]);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
         {/* Swipe zone */}
         <PanGestureHandler onGestureEvent={gestureHandler}>
-          <Animated.View style={animatedStyle}>
+          <Animated.View style={[animatedStyle, imageAnimatedStyle]}>
             <ImageDisplay imageUri={image} />
           </Animated.View>
         </PanGestureHandler>
@@ -203,23 +234,29 @@ export default function App() {
           ❌ Nope
         </Animated.Text>
 
-        {imageIndex !== null && (
-          <Text style={styles.imageIndexText}>Index: {imageIndex}</Text>
-        )}
-
-        {/* Like/Dislike image */}
+        {/* Like/Dislike buttons */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            onPress={dislikeImage}
-            style={[styles.button, styles.button.red]}
+            style={[
+              styles.button,
+              styles.button.red,
+              { backgroundColor: redButtonColor },
+            ]}
+            onPressIn={onPressInRed}
+            onPressOut={onPressOutRed}
           >
-            <Text>❌ Dislike</Text>
+            <Text>❌</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={likeImage}
-            style={[styles.button, styles.button.green]}
+            style={[
+              styles.button,
+              styles.button.green,
+              { backgroundColor: greenButtonColor },
+            ]}
+            onPressIn={onPressInGreen}
+            onPressOut={onPressOutGreen}
           >
-            <Text>❤️ Like</Text>
+            <Text>❤️</Text>
           </TouchableOpacity>
         </View>
 
@@ -243,16 +280,31 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   button: {
+    position: "absolute",
+    bottom: 0,
     width: 100,
     height: 100,
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    padding: 0,
+    borderRadius: 50,
+    backgroundColor: "#fff",
+    opacity: 0.8,
+    // iOS Shadow
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 7 },
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
+    // Android Shadow
+    elevation: 5,
+
     red: {
-      backgroundColor: "red",
+      left: "30%",
+      transform: [{ translateX: -50 }, { translateY: 30 }],
     },
     green: {
-      backgroundColor: "green",
+      right: "30%",
+      transform: [{ translateX: 50 }, { translateY: 30 }],
     },
   },
   actionText: {
