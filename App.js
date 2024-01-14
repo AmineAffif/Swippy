@@ -22,11 +22,12 @@ import Animated, {
   withSpring,
   runOnJS,
 } from "react-native-reanimated";
+import { BlurView } from "expo-blur";
 
 export default function App() {
   const [image, setImage] = useState(null);
 
-  const likeOpacity = useSharedValue(0);
+  const keepOpacity = useSharedValue(0);
   const nopeOpacity = useSharedValue(0);
 
   const translateX = useSharedValue(0);
@@ -41,21 +42,21 @@ export default function App() {
 
   const onPressInRed = () => setRedButtonColor("red");
   const onPressOutRed = () => {
-    setRedButtonColor("#fff")
-    dislikeImage();
+    setRedButtonColor("#fff");
+    deleteImage();
   };
 
   const onPressInGreen = () => setGreenButtonColor("green");
   const onPressOutGreen = () => {
-    setGreenButtonColor("#fff")
-    likeImage();
+    setGreenButtonColor("#fff");
+    keepImage();
   };
 
-  const triggerLiked = () => {
-    likeImage();
+  const triggerKeeped = () => {
+    keepImage();
   };
-  const triggerDisliked = () => {
-    dislikeImage();
+  const triggerDeleted = () => {
+    deleteImage();
   };
 
   // Swipe handler
@@ -68,12 +69,12 @@ export default function App() {
       translateX.value = context.translateX + event.translationX;
       translateY.value = context.translateY + event.translationY;
       rotate.value = translateX.value / 1000; // Ajust rotation ratio
-      likeOpacity.value = translateX.value > 0 ? translateX.value / 400 : 0;
+      keepOpacity.value = translateX.value > 0 ? translateX.value / 400 : 0;
       nopeOpacity.value = translateX.value < 0 ? -translateX.value / 400 : 0;
       const distance = Math.sqrt(
         event.translationX ** 2 + event.translationY ** 2
       );
-      const maxDistance = 300; // Vous pouvez ajuster ce seuil
+      const maxDistance = 300;
       imageOpacity.value = Math.max(1 - distance / maxDistance, 0);
     },
     onEnd: (event) => {
@@ -82,7 +83,7 @@ export default function App() {
           translateX.value = withSpring(0);
           translateY.value = withSpring(0);
           rotate.value = withSpring(0);
-          runOnJS(triggerLiked)();
+          runOnJS(triggerKeeped)();
         } catch (error) {
           console.error("Error: ", error);
         }
@@ -91,7 +92,7 @@ export default function App() {
           translateX.value = withSpring(0);
           translateY.value = withSpring(0);
           rotate.value = withSpring(0);
-          runOnJS(triggerDisliked)();
+          runOnJS(triggerDeleted)();
         } catch (error) {
           console.error("Error: ", error);
         }
@@ -100,7 +101,7 @@ export default function App() {
         translateY.value = withSpring(0);
         rotate.value = withSpring(0);
       }
-      likeOpacity.value = 0;
+      keepOpacity.value = 0;
       nopeOpacity.value = 0;
     },
   });
@@ -116,9 +117,9 @@ export default function App() {
     };
   });
 
-  const likeStyle = useAnimatedStyle(() => {
+  const keepStyle = useAnimatedStyle(() => {
     return {
-      opacity: likeOpacity.value,
+      opacity: keepOpacity.value,
     };
   });
 
@@ -194,16 +195,16 @@ export default function App() {
     }
   };
 
-  const likeImage = () => {
-    console.log("likeImage called");
+  const keepImage = () => {
+    console.log("keepImage called");
     pickRandomImage();
-    // like logic will be here
+    // keep logic will be here
   };
 
-  const dislikeImage = () => {
-    console.log("dislikeImage called");
+  const deleteImage = () => {
+    console.log("deleteImage called");
     pickRandomImage();
-    // dislike logic will be here
+    // delete logic will be here
   };
 
   useEffect(() => {
@@ -218,23 +219,29 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      {/* Background blured image */}
       <View style={styles.container}>
+        <Image
+          source={{ uri: image }}
+          style={styles.imageBackgroundStyle}
+          blurRadius={100}
+        />
         {/* Swipe zone */}
         <PanGestureHandler onGestureEvent={gestureHandler}>
           <Animated.View style={[animatedStyle, imageAnimatedStyle]}>
-            <ImageDisplay imageUri={image} />
+            <ImageDisplay imageUri={image} style={styles.imageStyle} />
           </Animated.View>
         </PanGestureHandler>
 
-        {/* Texts "Like" and "Nope" */}
-        <Animated.Text style={[styles.actionText, styles.likeText, likeStyle]}>
-          ❤️ Like
+        {/* Texts "keep" and "Nope" */}
+        <Animated.Text style={[styles.actionText, styles.keepText, keepStyle]}>
+          💚 Keep
         </Animated.Text>
         <Animated.Text style={[styles.actionText, styles.nopeText, nopeStyle]}>
-          ❌ Nope
+          ❌ Delete
         </Animated.Text>
 
-        {/* Like/Dislike buttons */}
+        {/* keep/delete buttons */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={[
@@ -245,7 +252,7 @@ export default function App() {
             onPressIn={onPressInRed}
             onPressOut={onPressOutRed}
           >
-            <Text>❌</Text>
+            <Text>🗑️</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
@@ -256,7 +263,7 @@ export default function App() {
             onPressIn={onPressInGreen}
             onPressOut={onPressOutGreen}
           >
-            <Text>❤️</Text>
+            <Text>💚</Text>
           </TouchableOpacity>
         </View>
 
@@ -278,6 +285,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     width: "100%",
     padding: 20,
+    position: "absolute",
+    bottom: 100,
   },
   button: {
     position: "absolute",
@@ -307,6 +316,9 @@ const styles = StyleSheet.create({
       transform: [{ translateX: 50 }, { translateY: 30 }],
     },
   },
+  imageStyle: {
+    width: "100%",
+  },
   actionText: {
     position: "absolute",
     fontSize: 30,
@@ -319,6 +331,14 @@ const styles = StyleSheet.create({
     opacity: 0,
     color: "#000",
   },
-  likeText: {},
+  keepText: {},
   nopeText: {},
+  imageBackgroundStyle: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.3,
+  },
 });

@@ -1,7 +1,10 @@
 // components/ImageDisplay.js
 import React from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import { View, Image, StyleSheet, Dimensions } from 'react-native';
 import { PanGestureHandler } from 'react-native-gesture-handler';
+
+const screenWidth = Dimensions.get('window').width;
+const screenHeight = Dimensions.get('window').height;
 
 const ImageDisplay = ({ imageUri }) => {
   if (!imageUri) return null;
@@ -18,11 +21,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: 20,
+    width: screenWidth,
+    height: screenHeight,
   },
   image: {
-    width: 500,
-    height: 500,
+    width: "90%",
+    height: "90%",
     resizeMode: 'contain',
+    position: 'absolute',
   },
 });
 
