@@ -22,10 +22,10 @@ import Animated, {
   withSpring,
   runOnJS,
 } from "react-native-reanimated";
-import { BlurView } from "expo-blur";
 
 export default function App() {
   const [image, setImage] = useState(null);
+  const [imageId, setImageId] = useState(null);
 
   const keepOpacity = useSharedValue(0);
   const nopeOpacity = useSharedValue(0);
@@ -188,6 +188,7 @@ export default function App() {
             Math.random() * finalBatch.assets.length
           );
           setImage(finalBatch.assets[randomIndexWithinBatch].uri);
+          setImageId(finalBatch.assets[randomIndexWithinBatch].id);
         }
       }
     } catch (error) {
@@ -198,14 +199,22 @@ export default function App() {
   const keepImage = () => {
     console.log("keepImage called");
     pickRandomImage();
-    // keep logic will be here
   };
 
-  const deleteImage = () => {
+  const deleteImage = async () => {
     console.log("deleteImage called");
-    pickRandomImage();
-    // delete logic will be here
-  };
+    if (imageId) {
+      try {
+        const deleteResult = await MediaLibrary.deleteAssetsAsync([imageId]);
+        console.log("Photo deleted", deleteResult);
+        if (deleteResult) {
+          pickRandomImage();
+        }
+      } catch (error) {
+        console.error("Error deleting image:", error);
+      }
+    }
+  };  
 
   useEffect(() => {
     pickRandomImage();
@@ -334,7 +343,7 @@ const styles = StyleSheet.create({
   keepText: {},
   nopeText: {},
   imageBackgroundStyle: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
